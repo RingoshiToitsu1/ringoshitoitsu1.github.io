@@ -27,6 +27,9 @@ jobs:
           ref: overhaul
           path: src
       - uses: actions/configure-pages@v4
+      - name: Apply data/config.json (same as production deploy)
+        working-directory: src
+        run: node scripts/build-config.js
       - name: Regenerate data pages (same as production deploy)
         working-directory: src
         run: node scripts/gen-pages.js
