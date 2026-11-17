@@ -1,0 +1,51 @@
+name: Build noindex preview of gomining-vip@overhaul
+# Pulls the PUBLIC overhaul branch of RingoshiToitsu1/gomining-vip (no token needed), makes it
+# safe to host here, and publishes it with the same GitHub Pages server the live site uses.
+#   - CNAME removed: this preview can never claim gmt-optimizer.com
+#   - robots.txt = Disallow: /   and   <meta name="robots" content="noindex,nofollow"> on every page
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/30 * * * *'   # fallback; pushes to overhaul also trigger it via `gh workflow run`
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  preview:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: RingoshiToitsu1/gomining-vip
+          ref: overhaul
+          path: src
+      - uses: actions/configure-pages@v4
+      - name: Regenerate data pages (same as production deploy)
+        working-directory: src
+        run: node scripts/gen-pages.js
+        continue-on-error: true
+      - name: Stage site exactly like production (no hidden folders)
+        run: mkdir -p "$RUNNER_TEMP/site" && cd src && tar --exclude='./.*' -cf - . | tar -xf - -C "$RUNNER_TEMP/site"
+      - name: Make it a safe, unindexable preview
+        working-directory: ${{ runner.temp }}/site
+        run: |
+          rm -f CNAME
+          printf 'User-agent: *\nDisallow: /\n' > robots.txt
+          # every page: drop any existing robots meta, add noindex,nofollow right after <head>
+          find . -name '*.html' -print0 | while IFS= read -r -d '' f; do
+            perl -0pi -e 's{<meta\s+name="robots"[^>]*>\s*}{}gi; s{<head([^>]*)>}{<head$1>\n<meta name="robots" content="noindex,nofollow">}i' "$f"
+          done
+          echo "pages: $(find . -name '*.html' | wc -l), noindexed: $(grep -rl 'content="noindex,nofollow"' --include=*.html . | wc -l)"
+          test ! -e CNAME
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/site
+      - id: deployment
+        uses: actions/deploy-pages@v4
