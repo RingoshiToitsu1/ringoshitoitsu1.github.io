@@ -5,6 +5,11 @@ name: Build noindex preview of gomining-vip@overhaul
 #   - robots.txt = Disallow: /   and   <meta name="robots" content="noindex,nofollow"> on every page
 on:
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'gomining-vip ref to build (default overhaul; used for before/after measurements)'
+        required: false
+        default: overhaul
   schedule:
     - cron: '*/30 * * * *'   # fallback; pushes to overhaul also trigger it via `gh workflow run`
 permissions:
@@ -24,7 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: RingoshiToitsu1/gomining-vip
-          ref: overhaul
+          ref: ${{ inputs.ref || 'overhaul' }}
           path: src
       - uses: actions/configure-pages@v4
       - name: Apply data/config.json (same as production deploy)
