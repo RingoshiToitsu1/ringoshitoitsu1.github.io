@@ -34,6 +34,9 @@ jobs:
         working-directory: src
         run: node scripts/gen-pages.js
         continue-on-error: true
+      - name: Translate pages (same as production deploy)
+        working-directory: src
+        run: node scripts/gen-i18n.js && node scripts/build-config.js
       - name: Stage site exactly like production (no hidden folders)
         run: mkdir -p "$RUNNER_TEMP/site" && cd src && tar --exclude='./.*' -cf - . | tar -xf - -C "$RUNNER_TEMP/site"
       - name: Make it a safe, unindexable preview
