@@ -34,14 +34,14 @@ jobs:
       - uses: actions/configure-pages@v4
       - name: Apply data/config.json (same as production deploy)
         working-directory: src
-        run: node scripts/build-config.js
+        run: if [ -f scripts/build-config.js ]; then node scripts/build-config.js; else echo "older code: no scripts/build-config.js, skipped"; fi
       - name: Regenerate data pages (same as production deploy)
         working-directory: src
-        run: node scripts/gen-pages.js
+        run: if [ -f scripts/gen-pages.js ]; then node scripts/gen-pages.js; else echo "older code: no scripts/gen-pages.js, skipped"; fi
         continue-on-error: true
       - name: Translate pages (same as production deploy)
         working-directory: src
-        run: node scripts/gen-i18n.js && node scripts/build-config.js
+        run: if [ -f scripts/gen-i18n.js ]; then node scripts/gen-i18n.js && node scripts/build-config.js; else echo "older code: no scripts/gen-i18n.js, skipped"; fi
       - name: Stage site exactly like production (no hidden folders)
         run: mkdir -p "$RUNNER_TEMP/site" && cd src && tar --exclude='./.*' -cf - . | tar -xf - -C "$RUNNER_TEMP/site"
       - name: Make it a safe, unindexable preview
